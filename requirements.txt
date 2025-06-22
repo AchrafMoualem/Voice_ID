@@ -1,0 +1,26 @@
+# Backend principal
+tensorflow==2.15.0
+keras==2.15.0
+
+# Traitement audio
+librosa==0.10.1
+soundfile==0.12.1
+scikit-learn==1.3.2
+numpy==1.24.4
+
+# Web app
+Flask==2.3.3
+
+# Reconnaissance vocale
+openai-whisper==20231117
+torch>=1.10.0
+torchaudio>=0.10.0
+
+# Microphone support
+sounddevice==0.4.6
+
+keybert
+sumy
+nltk
+
+matplotlib
