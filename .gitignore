@@ -1,2 +1,29 @@
+# === Virtual environment ===
 venv/
-venv/
+
+# === Python cache files ===
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# === IDE settings ===
+.idea/
+
+# === Model files and data ===
+*.npy
+*.h5
+
+# === Feature cache or intermediate data ===
+cached_features/
+
+# === Environment variables ===
+.env
+
+# === Logs and outputs ===
+*.log
+*.tmp
+
+# === OS metadata ===
+.DS_Store
+Thumbs.db
