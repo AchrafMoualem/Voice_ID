@@ -745,7 +745,7 @@
     border: 1px solid rgba(239, 68, 68, 0.3);
   }
 
-  /* Buttons Container - Mise en ligne */
+  /* Buttons Container - result toggles */
   .buttons-container {
     display: flex;
     gap: 12px;
@@ -1101,7 +1101,7 @@
 </div>
 
 <script>
-  // Définir les noms des classes pour l'affichage
+  // Mapping speaker indices for UI (kept for compatibility)
   const speakerNames = {
     "0": "Homme",
     "1": "Femme",
@@ -1110,11 +1110,10 @@
     "4": "Voix synthétique"
   };
 
-  // Interactive particle animation
+  // Background particle animation (same as home page)
   (function() {
     var width, height, largeHeader, canvas, ctx, points, target, animateHeader = true;
 
-    // Main
     initHeader();
     initAnimation();
     addListeners();
@@ -1132,7 +1131,6 @@
         canvas.height = height;
         ctx = canvas.getContext('2d');
 
-        // create points
         points = [];
         for(var x = 0; x < width; x = x + width/20) {
             for(var y = 0; y < height; y = y + height/20) {
@@ -1143,7 +1141,6 @@
             }
         }
 
-        // for each point find the 5 closest points
         for(var i = 0; i < points.length; i++) {
             var closest = [];
             var p1 = points[i];
@@ -1173,14 +1170,12 @@
             p1.closest = closest;
         }
 
-        // assign a circle to each point
         for(var i in points) {
             var c = new Circle(points[i], 2+Math.random()*2, 'rgba(139,92,246,0.3)');
             points[i].circle = c;
         }
     }
 
-    // Event handling
     function addListeners() {
         if(!('ontouchstart' in window)) {
             window.addEventListener('mousemove', mouseMove);
@@ -1216,7 +1211,6 @@
         canvas.height = height;
     }
 
-    // animation
     function initAnimation() {
         animate();
         for(var i in points) {
@@ -1228,7 +1222,6 @@
         if(animateHeader) {
             ctx.clearRect(0,0,width,height);
             for(var i in points) {
-                // Always show neurons with base opacity, enhanced when cursor is near
                 var distance = Math.abs(getDistance(target, points[i]));
                 
                 if(distance < 4000) {
@@ -1241,7 +1234,6 @@
                     points[i].active = 0.15;
                     points[i].circle.active = 0.25;
                 } else {
-                    // Base visibility - always show neurons
                     points[i].active = 0.08;
                     points[i].circle.active = 0.15;
                 }
@@ -1265,9 +1257,7 @@
         });
     }
 
-    // Canvas manipulation
     function drawLines(p) {
-        // Always draw lines with at least base opacity
         for(var i in p.closest) {
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
@@ -1280,7 +1270,6 @@
     function Circle(pos,rad,color) {
         var _this = this;
 
-        // constructor
         (function() {
             _this.pos = pos || null;
             _this.radius = rad || null;
@@ -1288,7 +1277,6 @@
         })();
 
         this.draw = function() {
-            // Always draw circles with at least base opacity
             ctx.beginPath();
             ctx.arc(_this.pos.x, _this.pos.y, _this.radius, 0, 2 * Math.PI, false);
             ctx.fillStyle = 'rgba(139,92,246,'+ _this.active+')';
@@ -1296,11 +1284,9 @@
         };
     }
 
-    // Util
     function getDistance(p1, p2) {
         return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
     }
-    
   })();
 
   // Tab switching
@@ -1311,18 +1297,16 @@
       tab.addEventListener('click', () => {
         const tabId = tab.getAttribute('data-tab');
         
-        // Update active tab
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         
-        // Show active content
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
         document.getElementById(`${tabId}-tab`).classList.add('active');
       });
     });
   })();
 
-  // Transcription, Keywords, and Summarize toggle buttons
+  // Toggle buttons for transcription / keywords / summary
   (function setupToggleButtons() {
     const buttons = [
       { btn: 'upload-transcription-button', content: 'upload-transcription-content', text: 'upload-transcription-text', showText: 'Transcription', hideText: 'Masquer' },
@@ -1342,7 +1326,6 @@
         button.addEventListener('click', () => {
           const isShowing = contentDiv.classList.contains('active');
           
-          // Hide all other content in the same tab
           const tabPrefix = btn.includes('upload') ? 'upload' : 'record';
           document.querySelectorAll(`#${tabPrefix}-transcription-content, #${tabPrefix}-keywords-content, #${tabPrefix}-summarize-content`).forEach(el => {
             if (el !== contentDiv) {
@@ -1350,7 +1333,6 @@
             }
           });
           
-          // Reset all button texts in the same tab
           document.querySelectorAll(`#${tabPrefix}-transcription-text, #${tabPrefix}-keywords-text, #${tabPrefix}-summarize-text`).forEach((el, index) => {
             if (el !== textSpan) {
               const buttonNames = ['Transcription', 'Mots-clés', 'Résumé'];
@@ -1358,7 +1340,6 @@
             }
           });
           
-          // Toggle current content
           contentDiv.classList.toggle('active');
           textSpan.textContent = isShowing ? showText : hideText;
         });
@@ -1380,7 +1361,6 @@
       }
     });
 
-    // Drag and drop functionality
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
       fileUpload.addEventListener(eventName, preventDefaults, false);
     });
@@ -1446,7 +1426,6 @@
     let recordingDuration = 0;
     let isPlaying = false;
     
-    // Generate waveform bars
     function generateWaveform() {
       waveformContainer.innerHTML = '';
       const barCount = 40;
@@ -1460,13 +1439,11 @@
       }
     }
     
-    // Check if browser supports MediaRecorder
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       recordButton.addEventListener('click', toggleRecording);
       rejectRecording.addEventListener('click', resetRecording);
       submitRecording.addEventListener('click', analyzeRecording);
       
-      // Custom audio player controls
       playButton.addEventListener('click', togglePlay);
       audioPreview.addEventListener('timeupdate', updateProgress);
       audioPreview.addEventListener('loadedmetadata', setDuration);
@@ -1487,7 +1464,6 @@
         `;
         isPlaying = true;
         
-        // Animate waveform
         const bars = document.querySelectorAll('.waveform-bar');
         bars.forEach(bar => {
           bar.style.animation = 'none';
@@ -1506,7 +1482,6 @@
         `;
         isPlaying = false;
         
-        // Pause waveform animation
         const bars = document.querySelectorAll('.waveform-bar');
         bars.forEach(bar => {
           bar.style.animation = 'none';
@@ -1529,7 +1504,6 @@
       
       timeDisplay.textContent = `${minutes}:${seconds} / ${totalMinutes}:${totalSeconds}`;
       
-      // If audio ended, reset play button
       if (currentTime >= duration) {
         playButton.innerHTML = `
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1538,7 +1512,6 @@
         `;
         isPlaying = false;
         
-        // Reset waveform animation
         const bars = document.querySelectorAll('.waveform-bar');
         bars.forEach(bar => {
           bar.style.animation = 'none';
@@ -1570,99 +1543,89 @@
     }
     
     async function startRecording() {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          sampleRate: 48000,        // Qualité studio / recommandée pour Opus
-          channelCount: 1,          // Mono (suffisant pour la voix)
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
-        }
-      });
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: 48000,
+            channelCount: 1,
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
 
-      mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
 
-      audioChunks = [];
+        audioChunks = [];
 
-      mediaRecorder.addEventListener('dataavailable', event => {
-        audioChunks.push(event.data);
-      });
+        mediaRecorder.addEventListener('dataavailable', event => {
+          audioChunks.push(event.data);
+        });
 
-      mediaRecorder.addEventListener('stop', () => {
-        audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
-        audioURL = URL.createObjectURL(audioBlob);
-        audioPreview.src = audioURL;
+        mediaRecorder.addEventListener('stop', () => {
+          audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+          audioURL = URL.createObjectURL(audioBlob);
+          audioPreview.src = audioURL;
 
-        generateWaveform();
-        recordingPreview.style.display = 'block';
+          generateWaveform();
+          recordingPreview.style.display = 'block';
 
-        const minutes = Math.floor(recordingDuration / 60).toString().padStart(2, '0');
-        const seconds = Math.floor(recordingDuration % 60).toString().padStart(2, '0');
-        previewDuration.textContent = `${minutes}:${seconds}`;
+          const minutes = Math.floor(recordingDuration / 60).toString().padStart(2, '0');
+          const seconds = Math.floor(recordingDuration % 60).toString().padStart(2, '0');
+          previewDuration.textContent = `${minutes}:${seconds}`;
 
-        stream.getTracks().forEach(track => track.stop());
-      });
+          stream.getTracks().forEach(track => track.stop());
+        });
 
-      mediaRecorder.start();
+        mediaRecorder.start();
 
-      recordButton.classList.add('recording');
-      recordIcon.innerHTML = `<rect x="6" y="6" width="12" height="12"></rect>`;
-      recordingStatus.textContent = "Enregistrement en cours...";
-      recordingTime.style.display = 'block';
+        recordButton.classList.add('recording');
+        recordIcon.innerHTML = `<rect x="6" y="6" width="12" height="12"></rect>`;
+        recordingStatus.textContent = "Enregistrement en cours...";
+        recordingTime.style.display = 'block';
 
-      startTime = Date.now();
-      recordingDuration = 0;
-      updateTimer();
-      timerInterval = setInterval(updateTimer, 1000);
+        startTime = Date.now();
+        recordingDuration = 0;
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
 
-    } catch (err) {
-      console.error('Erreur d’accès au micro:', err);
-      recordingStatus.textContent = "Erreur d'accès au microphone: " + err.message;
+      } catch (err) {
+        console.error('Erreur d’accès au micro:', err);
+        recordingStatus.textContent = "Erreur d'accès au microphone: " + err.message;
+      }
     }
-  }
-
-
     
     function stopRecording() {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
         
-        // Update UI
         recordButton.classList.remove('recording');
         recordIcon.innerHTML = `
           <circle cx="12" cy="12" r="6"></circle>
         `;
         recordingStatus.textContent = "Enregistrement terminé";
         
-        // Stop timer
         clearInterval(timerInterval);
       }
     }
     
     function resetRecording() {
-      // Reset UI
       recordingPreview.style.display = 'none';
       recordingTime.style.display = 'none';
       recordingStatus.textContent = "Appuyez pour commencer l'enregistrement";
       
-      // Reset audio player
       if (isPlaying) {
         audioPreview.pause();
         isPlaying = false;
       }
       
-      // Hide all record buttons
       document.getElementById('record-buttons-container').style.display = 'none';
-      
-      // Hide all record content
       document.getElementById('record-transcription-content').classList.remove('active');
       document.getElementById('record-keywords-content').classList.remove('active');
       document.getElementById('record-summarize-content').classList.remove('active');
       
-      // Clear audio data
       if (audioURL) {
         URL.revokeObjectURL(audioURL);
       }
@@ -1681,22 +1644,17 @@
     function analyzeRecording() {
       if (!audioBlob) return;
       
-      // Create a File object from the Blob
-      const audioFile = new File([audioBlob], "recording.wav", { type: "audio/wav" });
+      const audioFile = new File([audioBlob], "recording.webm", { type: "audio/webm" });
       
-      // Hide recording preview
       recordingPreview.style.display = 'none';
       
-      // Show visualizer
       const visualizerContainer = document.getElementById('visualizer-container');
       visualizerContainer.style.display = 'block';
       setupAudioVisualizer();
       
-      // Hide previous results and buttons
       document.getElementById('result-container').style.display = 'none';
       document.getElementById('record-buttons-container').style.display = 'none';
       
-      // Simulate API call with a delay
       setTimeout(async () => {
         try {
           const formData = new FormData();
@@ -1713,29 +1671,23 @@
 
           const data = await response.json();
           displayResults(data);
-          
-          // Show and update buttons/data for record tab
           updateRecordTabData(data);
           
         } catch (err) {
           console.error('Error during analysis:', err);
           displayError(err.message || "Une erreur est survenue lors de l'analyse");
         } finally {
-          // Hide visualizer
           visualizerContainer.style.display = 'none';
           
-          // Reset recording UI but keep buttons if they have data
           recordingPreview.style.display = 'none';
           recordingTime.style.display = 'none';
           recordingStatus.textContent = "Appuyez pour commencer l'enregistrement";
           
-          // Reset audio player
           if (isPlaying) {
             audioPreview.pause();
             isPlaying = false;
           }
           
-          // Clear audio data
           if (audioURL) {
             URL.revokeObjectURL(audioURL);
           }
@@ -1747,7 +1699,6 @@
     }
   })();
 
-  // Audio visualizer for analysis
   function setupAudioVisualizer() {
     const canvas = document.getElementById('audio-visualizer');
     const ctx = canvas.getContext('2d');
@@ -1777,7 +1728,6 @@
     animateAudioVisualizer();
   }
 
-  // Update data for record tab
   function updateRecordTabData(data) {
     if (data.transcription) {
       document.getElementById('record-transcription-data').textContent = data.transcription;
@@ -1802,7 +1752,6 @@
     }
   }
 
-  // Update data for upload tab
   function updateUploadTabData(data) {
     if (data.transcription) {
       document.getElementById('upload-transcription-data').textContent = data.transcription;
@@ -1827,23 +1776,19 @@
     }
   }
 
-  // Form submission and analysis
   document.getElementById('uploadForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const audioFile = document.getElementById('audio').files[0];
     if (!audioFile) return;
     
-    // Show visualizer
     const visualizerContainer = document.getElementById('visualizer-container');
     visualizerContainer.style.display = 'block';
     setupAudioVisualizer();
     
-    // Hide previous results and buttons
     document.getElementById('result-container').style.display = 'none';
     document.getElementById('upload-buttons-container').style.display = 'none';
     
-    // Update button to loading state
     const analyzeButton = document.getElementById('analyze-button');
     const buttonContent = analyzeButton.querySelector('.button-content');
     const originalButtonHTML = buttonContent.innerHTML;
@@ -1875,24 +1820,18 @@
       }
       
       displayResults(data);
-      
-      // Show and update buttons/data for upload tab
       updateUploadTabData(data);
       
     } catch (err) {
       console.error('Error during analysis:', err);
       displayError(err.message || "Une erreur est survenue lors de l'analyse");
     } finally {
-      // Hide visualizer
       visualizerContainer.style.display = 'none';
-      
-      // Restore button
       buttonContent.innerHTML = originalButtonHTML;
       analyzeButton.disabled = false;
     }
   });
 
-  // Display results
   function displayResults(data) {
     const resultContainer = document.getElementById('result-container');
     
@@ -1912,7 +1851,7 @@
       <div class="result-item">
         <div class="result-row">
           <span class="result-label">Prédiction:</span>
-          <span class="result-value">${data.speaker_name || getSpeakerName(data.predicted_label)}</span>
+          <span class="result-value">${data.predicted_label || getSpeakerName(data.predicted_label)}</span>
         </div>
       </div>
       
@@ -1956,7 +1895,6 @@
     resultContainer.innerHTML = html;
     resultContainer.style.display = 'block';
     
-    // Animate progress bars
     setTimeout(() => {
       const bars = document.querySelectorAll('.probability-bar-inner');
       bars.forEach((bar, i) => {
@@ -1966,12 +1904,10 @@
     }, 100);
   }
 
-  // Get speaker name from index
   function getSpeakerName(index) {
     return speakerNames[index] || `${index}`;
   }
 
-  // Display error
   function displayError(errorMessage) {
     const resultContainer = document.getElementById('result-container');
     
@@ -1991,3 +1927,4 @@
 </script>
 </body>
 </html>
+

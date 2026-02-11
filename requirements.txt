@@ -16,11 +16,15 @@ openai-whisper==20231117
 torch>=1.10.0
 torchaudio>=0.10.0
 
-# Microphone support
-sounddevice==0.4.6
-
+# NLP & text processing
 keybert
 sumy
 nltk
+langdetect
 
+# Visualisation & analysis (training / experiments)
 matplotlib
+seaborn
+
+# Audio utilities for dataset preparation
+pydub

@@ -1,0 +1,10 @@
+from app import create_app
+
+
+app = create_app()
+
+
+if __name__ == "__main__":
+    # Keep default debug/host/port consistent with the original script
+    app.run(debug=app.config.get("DEBUG", True), host="0.0.0.0", port=5000)
+

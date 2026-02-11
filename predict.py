@@ -1,134 +1,3 @@
-'''import numpy as np
-import librosa
-import os
-os.environ["TF_USE_LEGACY_KERAS"] = "0"
-import tensorflow as tf
-import sounddevice as sd
-import sys
-
-# ==== PATH MANAGEMENT ====
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LABELS_PATH = os.path.join(BASE_DIR, "label_mapping.npy")
-MEAN_PATH = os.path.join(BASE_DIR, "mean.npy")
-STD_PATH = os.path.join(BASE_DIR, "std.npy")
-MODEL_PATH = os.path.join(BASE_DIR, "final_model.h5")
-
-# ==== PARAMETERS ====
-SAMPLE_RATE = 22050
-DURATION = 5
-N_MFCC = 40
-MAX_PAD_LEN = 100
-
-# ==== LOAD LABELS ====
-label_to_index = np.load(LABELS_PATH, allow_pickle=True).item()
-index_to_label = {v: k for k, v in label_to_index.items()}
-
-# ==== FEATURE EXTRACTION ====
-def extract_features(file_path):
-    try:
-        audio, sr = librosa.load(file_path, sr=SAMPLE_RATE, duration=DURATION)
-        mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=N_MFCC)
-        mfcc = librosa.util.fix_length(mfcc, size=MAX_PAD_LEN, axis=1)
-        return mfcc
-    except Exception as e:
-        print(f"Error processing {file_path}: {e}")
-        return None
-
-def extract_features_from_array(audio):
-    try:
-        mfcc = librosa.feature.mfcc(y=audio, sr=SAMPLE_RATE, n_mfcc=N_MFCC)
-        mfcc = librosa.util.fix_length(mfcc, size=MAX_PAD_LEN, axis=1)
-        return mfcc
-    except Exception as e:
-        print(f"Error processing live audio: {e}")
-        return None
-
-# ==== NORMALIZATION ====
-def normalize(X):
-    mean = np.load(MEAN_PATH)
-    std = np.load(STD_PATH)
-    return (X - mean) / std
-
-# ==== PREDICT FROM FILE ====
-def predict_audio(file_path, model_path=MODEL_PATH):
-    try:
-        print(f"📁 Loading model from: {model_path}")
-        model = tf.keras.models.load_model(model_path)
-
-        print(f"🔎 Extracting MFCC from: {file_path}")
-        mfcc = extract_features(file_path)
-        if mfcc is None:
-            print("❌ MFCC extraction failed.")
-            return None, []
-
-        print(f"✅ MFCC shape: {mfcc.shape}")
-
-        X = mfcc[np.newaxis, ..., np.newaxis]
-        print(f"📐 Input shape to model: {X.shape}")
-
-        X = normalize(X)
-        print(f"⚙️ Normalization applied.")
-
-        preds = model.predict(X)
-        print(f"📊 Predictions: {preds}")
-
-        pred_index = np.argmax(preds, axis=1)[0]
-        predicted_label = index_to_label[pred_index]
-
-        print(f"✅ Predicted label: {predicted_label}")
-        return predicted_label, preds[0].tolist()
-
-    except Exception as e:
-        print(f"💥 Error predicting from file: {e}")
-        return None, []
-
-# ==== PREDICT FROM LIVE MICROPHONE ====
-def predict_live_microphone(model_path=MODEL_PATH):
-    try:
-        print(f"🎙️ Speak now for {DURATION} seconds...")
-        audio = sd.rec(int(DURATION * SAMPLE_RATE), samplerate=SAMPLE_RATE, channels=1, dtype='float32')
-        sd.wait()
-        audio = audio.flatten()
-
-        model = tf.keras.models.load_model(model_path)
-        mfcc = extract_features_from_array(audio)
-        if mfcc is None:
-            return None, []
-
-        X = mfcc[np.newaxis, ..., np.newaxis]
-        X = normalize(X)
-        preds = model.predict(X)
-        pred_index = np.argmax(preds, axis=1)[0]
-        predicted_label = index_to_label[pred_index]
-
-        return predicted_label, preds[0].tolist()
-
-    except Exception as e:
-        print(f"Error during live prediction: {e}")
-        return None, []
-
-# ==== MAIN ====
-if __name__ == "__main__":
-    audio_path = os.path.join(BASE_DIR, "test_audio.wav")  # change to a valid test file
-    prediction_file = predict_audio(audio_path)
-    if prediction_file is not None:
-        print(f"📁 Prediction from file: {prediction_file}")
-    else:
-        print("❌ Failed to predict from file.")
-
-
-
-    # Option 2: Predict from live microphone
-    #predicted_label, probabilities = predict_live_microphone(model_path)
-    #if predicted_label is not None:
-        #confidence = max(probabilities)
-        #print(f"🎤 Prediction from microphone: {predicted_label}")
-        #print(f"📊 Confidence: {confidence:.2f}")
-        #print(f"📈 Probabilities: {probabilities}")
-    #else:
-        #print("❌ Failed to predict from microphone.")'''
-
-
 import numpy as np
 import librosa
 import os
@@ -142,7 +11,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LABELS_PATH = os.path.join(BASE_DIR, "label_mapping.npy")
 MEAN_PATH = os.path.join(BASE_DIR, "mean.npy")
 STD_PATH = os.path.join(BASE_DIR, "std.npy")
-MODEL_PATH = os.path.join(BASE_DIR, "final_model.h5")
+model_path = os.path.join(BASE_DIR, "models", "final_model.h5")
+
 
 # ==== PARAMETERS ====
 SAMPLE_RATE = 22050
@@ -153,6 +23,14 @@ MAX_PAD_LEN = 100
 # ==== LOAD LABELS ====
 label_to_index = np.load(LABELS_PATH, allow_pickle=True).item()
 index_to_label = {v: k for k, v in label_to_index.items()}
+
+# ==== LOAD MODEL ONCE ====
+try:
+    SPEAKER_MODEL = tf.keras.models.load_model(model_path)
+    print(f"✅ Speaker model loaded from: {model_path}")
+except Exception as exc:  # pragma: no cover
+    print(f"❌ Failed to load speaker model at startup: {exc}")
+    SPEAKER_MODEL = None
 
 # ==== AUDIO CONVERSION ====
 def convert_webm_to_wav(webm_path):
@@ -207,7 +85,7 @@ def normalize(X):
     return (X - mean) / std
 
 # ==== PREDICT FROM FILE ====
-def predict_audio(file_path, model_path=MODEL_PATH):
+def predict_audio(file_path, model_path=model_path):
     try:
         if file_path.endswith('.webm'):
             wav_path = convert_webm_to_wav(file_path)
@@ -218,7 +96,16 @@ def predict_audio(file_path, model_path=MODEL_PATH):
 
         wav_path = normalize_audio_volume(wav_path)
 
-        model = tf.keras.models.load_model(model_path)
+        model = SPEAKER_MODEL
+        # Allow explicit override while still avoiding per-request loads
+        if model is None or (model_path and model_path != model_path):
+            print(f"📁 Loading speaker model from: {model_path}")
+            model = tf.keras.models.load_model(model_path)
+
+        if model is None:
+            print("❌ Speaker model is not available.")
+            return None, []
+
         mfcc = extract_features(wav_path)
         if mfcc is None:
             return None, []
