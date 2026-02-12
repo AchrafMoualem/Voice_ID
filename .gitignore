@@ -11,8 +11,12 @@ __pycache__/
 .idea/
 
 # === Model files and data ===
-*.npy
-*.h5
+history_fold1.npy
+history_fold2.npy
+history_fold3.npy
+model_fold1.h5
+model_fold2.h5
+model_fold3.h5
 
 # === Feature cache or intermediate data ===
 cached_features/
