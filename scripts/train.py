@@ -19,6 +19,8 @@ from sklearn.preprocessing import label_binarize
 # ==== 1. PARAMETERS ====
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MODEL_OUTPUT_PATH = os.path.join(PROJECT_ROOT, "models", "final_model.h5")
+MODELS_DIR = os.path.join(PROJECT_ROOT, "models")
+os.makedirs(MODELS_DIR, exist_ok=True)
 DATASET_PATH = r"C:\Users\hp\Desktop\DATASET"
 SAMPLE_RATE = 22050
 DURATION = 5
@@ -224,7 +226,7 @@ def train_with_cv(X, y, label_to_index, n_splits=3):
                 patience=4, factor=0.5, min_lr=1e-6
             ),
             tf.keras.callbacks.ModelCheckpoint(
-                filepath=f"model_fold{fold + 1}.h5",
+                filepath=os.path.join(MODELS_DIR, f"model_fold{fold + 1}.h5"),
                 save_best_only=True,
                 monitor="val_accuracy",
                 mode="max",
@@ -245,7 +247,7 @@ def train_with_cv(X, y, label_to_index, n_splits=3):
 
         val_loss, val_acc = model.evaluate(X_val, y_val, verbose=0)
         scores.append(val_acc)
-        np.save(f"history_fold{fold + 1}.npy", history.history)
+        np.save(os.path.join(MODELS_DIR, f"history_fold{fold + 1}.npy"), history.history)
 
         plot_training_history(history.history, f"Fold {fold + 1}")
         plot_confusion_matrix(
@@ -312,7 +314,7 @@ def train_final_model(X, y, label_to_index):
     else:
         print("✅ Pas de surapprentissage significatif.")
 
-    np.save("history_final1.npy", history.history)
+    np.save(os.path.join(MODELS_DIR, "history_final1.npy"), history.history)
     plot_training_history(history.history, "Final Model")
     plot_confusion_matrix(
         model, X_val, y_val, list(label_to_index.keys()), title="Final Model"
@@ -331,9 +333,9 @@ def main():
     std = np.std(X, axis=0, keepdims=True) + 1e-8
     X = (X - mean) / std
 
-    np.save("mean.npy", mean)
-    np.save("std.npy", std)
-    np.save("label_mapping.npy", label_to_index)
+    np.save(os.path.join(MODELS_DIR, "mean.npy"), mean)
+    np.save(os.path.join(MODELS_DIR, "std.npy"), std)
+    np.save(os.path.join(MODELS_DIR, "label_mapping.npy"), label_to_index)
 
     train_with_cv(X, y, label_to_index)
     train_final_model(X, y, label_to_index)

@@ -31,6 +31,15 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     )
     app.config.from_object(config_class)
 
+    # === Make model/artifact paths available to non-Flask modules ===
+    os.environ.setdefault("SPEAKER_MODEL_PATH", str(app.config.get("SPEAKER_MODEL_PATH")))
+    os.environ.setdefault("LABEL_MAPPING_PATH", str(app.config.get("LABEL_MAPPING_PATH")))
+    os.environ.setdefault("MEAN_PATH", str(app.config.get("MEAN_PATH")))
+    os.environ.setdefault("STD_PATH", str(app.config.get("STD_PATH")))
+
+    # Import services after env vars are set so modules like `predict.py` pick them up
+    from app import services
+
     # ==== Load global models once at startup ====
     whisper_model = None
     kw_model = None
@@ -58,6 +67,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.config["WHISPER_MODEL"] = whisper_model
     app.config["KEYBERT_MODEL"] = kw_model
     app.config["TEXT_SUMMARIZER"] = summarizer
+
+
+    app.config["TRANSCRIBE_AUDIO"] = lambda file_path: services.transcription_service.transcribe_audio(
+        whisper_model, file_path
+    )
 
     # ==== Register blueprints / routes ====
     from .routes import main_bp

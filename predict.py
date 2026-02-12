@@ -2,17 +2,33 @@ import numpy as np
 import librosa
 import os
 import subprocess
-import uuid
+import tempfile
 import tensorflow as tf
 import soundfile as sf
 
 # ==== PATH MANAGEMENT ====
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LABELS_PATH = os.path.join(BASE_DIR, "label_mapping.npy")
-MEAN_PATH = os.path.join(BASE_DIR, "mean.npy")
-STD_PATH = os.path.join(BASE_DIR, "std.npy")
-model_path = os.path.join(BASE_DIR, "models", "final_model.h5")
 
+# Allow overriding via environment variables (set by the Flask app at startup)
+MODEL_PATH = os.environ.get(
+    "SPEAKER_MODEL_PATH",
+    os.path.join(BASE_DIR, "models", "final_model.h5"),
+)
+
+LABELS_PATH = os.environ.get(
+    "LABEL_MAPPING_PATH",
+    os.path.join(BASE_DIR, "models", "label_mapping.npy"),
+)
+
+MEAN_PATH = os.environ.get(
+    "MEAN_PATH",
+    os.path.join(BASE_DIR, "models", "mean.npy"),
+)
+
+STD_PATH = os.environ.get(
+    "STD_PATH",
+    os.path.join(BASE_DIR, "models", "std.npy"),
+)
 
 # ==== PARAMETERS ====
 SAMPLE_RATE = 22050
@@ -24,48 +40,41 @@ MAX_PAD_LEN = 100
 label_to_index = np.load(LABELS_PATH, allow_pickle=True).item()
 index_to_label = {v: k for k, v in label_to_index.items()}
 
+# ==== LOAD NORMALIZATION ONCE ====
+MEAN = np.load(MEAN_PATH)
+STD = np.load(STD_PATH)
+
 # ==== LOAD MODEL ONCE ====
 try:
-    SPEAKER_MODEL = tf.keras.models.load_model(model_path)
-    print(f"✅ Speaker model loaded from: {model_path}")
-except Exception as exc:  # pragma: no cover
+    SPEAKER_MODEL = tf.keras.models.load_model(MODEL_PATH)
+    print(f"✅ Speaker model loaded from: {MODEL_PATH}")
+except Exception as exc:
     print(f"❌ Failed to load speaker model at startup: {exc}")
     SPEAKER_MODEL = None
 
-# ==== AUDIO CONVERSION ====
-def convert_webm_to_wav(webm_path):
-    wav_path = os.path.join(BASE_DIR, f"temp_{uuid.uuid4().hex}.wav")
-    command = ["ffmpeg", "-y", "-i", webm_path, "-ar", str(SAMPLE_RATE), "-ac", "1", wav_path]
-    try:
-        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return wav_path
-    except subprocess.CalledProcessError as e:
-        print(f"❌ FFmpeg conversion failed: {e}")
-        return None
 
 # ==== REMOVE SILENCE ====
 def remove_silence(y, sr, top_db=20):
     try:
         intervals = librosa.effects.split(y, top_db=top_db)
-        return np.concatenate([y[start:end] for start, end in intervals]) if intervals.any() else y
+        return np.concatenate([y[start:end] for start, end in intervals]) if len(intervals) > 0 else y
     except Exception as e:
-        print(f"❌ Erreur suppression silence: {e}")
+        print(f"❌ Silence removal error: {e}")
         return y
 
+
 # ==== AUDIO NORMALIZATION ====
-def normalize_audio_volume(file_path, output_path=None):
+def normalize_audio_volume(file_path):
     try:
         y, sr = librosa.load(file_path, sr=None)
         y = remove_silence(y, sr, top_db=20)
-        y = y / np.max(np.abs(y) + 1e-9)
-        if not output_path:
-            output_path = file_path
-        sf.write(output_path, y, sr)
-        print(f"🔊 Audio nettoyé et normalisé : {output_path}")
-        return output_path
-    except Exception as e:
-        print(f"❌ Échec normalisation : {e}")
+        y = y / (np.max(np.abs(y)) + 1e-9)
+        sf.write(file_path, y, sr)
         return file_path
+    except Exception as e:
+        print(f"❌ Audio normalization failed: {e}")
+        return file_path
+
 
 # ==== FEATURE EXTRACTION ====
 def extract_features(file_path):
@@ -78,46 +87,70 @@ def extract_features(file_path):
         print(f"❌ Feature extraction failed: {e}")
         return None
 
+
 # ==== NORMALIZATION ====
 def normalize(X):
-    mean = np.load(MEAN_PATH)
-    std = np.load(STD_PATH)
-    return (X - mean) / std
+    return (X - MEAN) / STD
+
+
+# ==== CONVERT WEBM TO WAV USING TEMPFILE ====
+def convert_webm_to_wav(webm_path):
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            wav_path = tmp.name
+
+        command = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            webm_path,
+            "-ar",
+            str(SAMPLE_RATE),
+            "-ac",
+            "1",
+            wav_path,
+        ]
+
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        return wav_path
+
+    except subprocess.CalledProcessError as e:
+        print(f"❌ FFmpeg conversion failed: {e}")
+        return None
+
 
 # ==== PREDICT FROM FILE ====
-def predict_audio(file_path, model_path=model_path):
+def predict_audio(file_path):
+    wav_path = file_path
+    temp_file_created = False
+
     try:
-        if file_path.endswith('.webm'):
+        # ==== CONVERT IF NEEDED ====
+        if file_path.endswith(".webm"):
             wav_path = convert_webm_to_wav(file_path)
             if not wav_path:
                 return None, []
-        else:
-            wav_path = file_path
+            temp_file_created = True
 
+        # ==== NORMALIZE AUDIO ====
         wav_path = normalize_audio_volume(wav_path)
 
-        model = SPEAKER_MODEL
-        # Allow explicit override while still avoiding per-request loads
-        if model is None or (model_path and model_path != model_path):
-            print(f"📁 Loading speaker model from: {model_path}")
-            model = tf.keras.models.load_model(model_path)
-
-        if model is None:
-            print("❌ Speaker model is not available.")
+        if SPEAKER_MODEL is None:
+            print("❌ Speaker model not loaded.")
             return None, []
 
+        # ==== FEATURE EXTRACTION ====
         mfcc = extract_features(wav_path)
         if mfcc is None:
             return None, []
 
         X = mfcc[np.newaxis, ..., np.newaxis]
         X = normalize(X)
-        preds = model.predict(X)
+
+        preds = SPEAKER_MODEL.predict(X)
         pred_index = np.argmax(preds, axis=1)[0]
         predicted_label = index_to_label[pred_index]
-
-        if wav_path != file_path and os.path.exists(wav_path):
-            os.remove(wav_path)
 
         return predicted_label, preds[0].tolist()
 
@@ -125,13 +158,25 @@ def predict_audio(file_path, model_path=model_path):
         print(f"💥 Prediction error: {e}")
         return None, []
 
+    finally:
+        # ==== GUARANTEED CLEANUP ====
+        if temp_file_created and wav_path and os.path.exists(wav_path):
+            try:
+                os.remove(wav_path)
+                print(f"🧹 Temporary file deleted: {wav_path}")
+            except Exception as cleanup_error:
+                print(f"⚠️ Cleanup failed: {cleanup_error}")
+
+
 # ==== MAIN TEST ====
 if __name__ == "__main__":
-    test_file = os.path.join(BASE_DIR, "test_audio.webm")  # ou .wav
+    test_file = os.path.join(BASE_DIR, "test_audio.webm")
     label, probs = predict_audio(test_file)
+
     if label:
         print(f"🎤 Predicted: {label}")
         print(f"📊 Probabilities: {probs}")
     else:
         print("❌ Prediction failed.")
+
 

@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 
-from .services.speaker_service import SPEAKER_NAMES, predict_speaker
+from .services.speaker_service import SPEAKER_NAMES, SPEAKER_LABELS, predict_speaker
 from .services.transcription_service import detect_language, transcribe_audio
 from .services.keyword_service import extract_keywords
 from .services.summarization_service import summarize_text
@@ -12,7 +12,6 @@ from .utils.audio_processing import delete_file_safely
 
 
 main_bp = Blueprint("main", __name__)
-
 
 @main_bp.route("/")
 def home() -> str:
@@ -53,8 +52,8 @@ def handle_prediction():
             return jsonify({"error": "Fichier vide ou non sauvegardé"}), 500
 
         # 1) Speaker prediction
-        model_path = current_app.config.get("SPEAKER_MODEL_PATH")
-        label, probabilities = predict_speaker(temp_path, model_path=model_path)
+        #model_path = current_app.config.get("SPEAKER_model_path")
+        label, probabilities = predict_speaker(temp_path)
         if label is None:
             return jsonify({"error": "Prédiction échouée"}), 500
 
@@ -77,13 +76,14 @@ def handle_prediction():
         # 6) Build JSON response
         confidence = float(max(probabilities)) if probabilities else 0.0
         probabilities_list = [float(p) for p in probabilities] if probabilities else []
+        # Prefer dynamic mapping from `label_mapping.npy` when available
         speaker_label = SPEAKER_NAMES.get(str(label), f"{label}")
 
         response_data: Dict[str, Any] = {
             "predicted_label": speaker_label,
             "confidence": confidence,
             "probabilities": probabilities_list,
-            "speaker_names": list(SPEAKER_NAMES.values()),
+            "speaker_names": SPEAKER_LABELS if SPEAKER_LABELS else list(SPEAKER_NAMES.values()),
             "transcription": transcription,
             "keywords": keyword_list,
             "resume": summary,

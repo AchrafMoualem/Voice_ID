@@ -22,22 +22,21 @@ class Config:
 
     # Speaker identification model path
     SPEAKER_MODEL_PATH = os.environ.get(
-    "SPEAKER_MODEL_PATH",
-    str(BASE_DIR / "models" / "final_model.h5"),
+        "SPEAKER_MODEL_PATH",
+        str(BASE_DIR / "models" / "final_model.h5"),
     )
-
 
     # Paths for preprocessing artifacts (kept for compatibility with training code)
     LABEL_MAPPING_PATH = os.environ.get(
         "LABEL_MAPPING_PATH",
-        str(BASE_DIR / "label_mapping.npy"),
+        str(BASE_DIR / "models" / "label_mapping.npy"),
     )
     MEAN_PATH = os.environ.get(
         "MEAN_PATH",
-        str(BASE_DIR / "mean.npy"),
+        str(BASE_DIR / "models" / "mean.npy"),
     )
     STD_PATH = os.environ.get(
         "STD_PATH",
-        str(BASE_DIR / "std.npy"),
+        str(BASE_DIR / "models" / "std.npy"),
     )
 
