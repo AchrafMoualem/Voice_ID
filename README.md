@@ -1,59 +1,227 @@
-## Speaker Identification & Semantic Analysis
+# 🎧 Speaker Identification & Semantic Speech Analysis
 
-This project is a Flask-based web application for:
+> An end-to-end Deep Learning + NLP web application that combines **Speaker Recognition** and **Semantic Speech Understanding** in a production-ready Flask architecture.
 
-- **Speaker identification** using a TensorFlow/Keras CNN model and MFCC features.
-- **Speech transcription** using OpenAI Whisper.
-- **Keyword extraction** using KeyBERT.
-- **Automatic summarization** using Sumy (LSA) and NLTK sentence tokenization.
+---
 
-### Project structure
+## Overview
 
-- `app/`
-  - `__init__.py`: Flask application factory, global model initialisation (Whisper, KeyBERT, Summarizer).
-  - `routes.py`: HTTP routes and JSON API for `/`, `/app`, `/predict`.
-  - `services/`
-    - `speaker_service.py`: Thin wrapper around the TensorFlow speaker model.
-    - `transcription_service.py`: Whisper transcription and language detection helpers.
-    - `keyword_service.py`: Keyword extraction with KeyBERT.
-    - `summarization_service.py`: Text summarisation with Sumy (LSA).
-  - `utils/`
-    - `audio_processing.py`: Helpers for safe temporary file cleanup.
-  - `templates/`
-    - `home.html`: Landing page.
-    - `index.html`: Main app UI (upload / record audio, show results).
-- `models/`: Placeholder package for trained model artifacts.
-- `predict.py`: Core audio preprocessing + speaker prediction logic.
-- `scripts/`:
-  - `train.py`: Offline training / experimentation scripts for the speaker model.
-  - `wav_transform.py`: Utility for converting datasets to WAV.
-- `config.py`: Central configuration (model paths, limits, etc.).
-- `run.py`: Entrypoint to run the Flask app via `python run.py`.
-- `app.py`: Backwards-compatible shim that also runs the Flask app.
+This project integrates **Audio Deep Learning** and **Natural Language Processing** into a unified intelligent pipeline.
 
-### Running the app
+From a single audio recording, the system can:
 
-1. Create and activate a virtual environment.
-2. Install dependencies:
+| Capability | Technology |
+|---|---|
+| 🎙️ Identify the Speaker | CNN-based model |
+| 📝 Transcribe Speech to Text | OpenAI Whisper |
+| 🧠 Extract Keywords | KeyBERT |
+| 📄 Generate an Automatic Summary | LSA – Sumy |
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+> It demonstrates how **Deep Learning models and NLP pipelines can be orchestrated together in a clean, modular web application.**
 
-3. Ensure the trained model (`models/final_model.h5`) and preprocessing artifacts
-   (`label_mapping.npy`, `mean.npy`, `std.npy`) are present in the project root.
-4. Start the server:
+---
 
-   ```bash
-   python run.py
-   ```
+## Key Features
 
-5. Open `http://localhost:5000/` in your browser.
+- End-to-end audio-to-semantic analysis pipeline
+- CNN-based speaker classification using MFCC features
+- State-of-the-art Whisper transcription
+- Semantic keyword extraction
+- Extractive summarization
+- Modular Flask architecture
+- Production-ready structure
 
-### Notes
+---
 
-- Heavy models (Whisper, KeyBERT, LSA summarizer, TensorFlow speaker model)
-  are loaded **once at startup** and reused across requests.
-- Training- and dataset-related scripts (`scripts/train.py`, `scripts/wav_transform.py`)
-  are kept for experimentation and model retraining and are not used by the web app.
+## System Architecture
 
+```
+Audio Input
+    ↓
+Audio Preprocessing  ·  Librosa + MFCC
+    ↓
+CNN Speaker Classification  ·  TensorFlow / Keras
+    ↓
+Whisper Transcription  ·  OpenAI Whisper
+    ↓
+Keyword Extraction  ·  KeyBERT
+    ↓
+Summarization  ·  LSA (Sumy)
+    ↓
+Flask Web Interface
+```
+
+---
+
+## Technologies Used
+
+### 🎧 Audio & Deep Learning
+
+| Library | Role |
+|---|---|
+| **TensorFlow / Keras** | CNN speaker classification model |
+| **Librosa** | MFCC feature extraction |
+| **NumPy** | Feature normalization |
+
+### 🧠 NLP & Speech
+
+| Library | Role |
+|---|---|
+| **OpenAI Whisper** | Speech-to-text transcription |
+| **KeyBERT** | Keyword extraction |
+| **Sumy (LSA)** | Extractive summarization |
+| **NLTK** | Sentence tokenization |
+
+### 🌐 Web Application
+
+| Tool | Role |
+|---|---|
+| **Flask** | Backend framework |
+| **HTML / CSS** | Frontend interface |
+
+---
+
+## Project Structure
+
+```
+├── app/
+│   ├── __init__.py             # Flask app factory & model loading
+│   ├── routes.py               # HTTP routes
+│   ├── services/
+│   │   ├── speaker_service.py
+│   │   ├── transcription_service.py
+│   │   ├── keyword_service.py
+│   │   └── summarization_service.py
+│   ├── utils/
+│   │   └── audio_processing.py
+│   └── templates/
+│       ├── home.html
+│       └── index.html
+│
+├── models/
+│   └── final_model.h5
+│
+├── scripts/
+│   ├── train.py
+│   └── wav_transform.py
+│
+├── predict.py
+├── config.py
+├── run.py
+└── requirements.txt
+```
+
+---
+
+## How It Works
+
+### 1 — Speaker Identification
+
+Audio is converted to WAV format if required, then MFCC features are extracted using Librosa. Features are normalized using pre-saved mean & standard deviation values, and the CNN model predicts the speaker class.
+
+### 2 — Speech Transcription
+
+Audio is passed directly to Whisper, which performs automatic language detection and outputs clean text transcription.
+
+### 3 — Keyword Extraction
+
+KeyBERT identifies semantically meaningful keywords and returns the top N most relevant words and phrases from the transcription.
+
+### 4 — Automatic Summarization
+
+LSA (Latent Semantic Analysis) selects the most informative sentences from the transcription to produce a concise extractive summary.
+
+---
+
+## Installation & Usage
+
+### 1 — Clone the Repository
+
+```bash
+git clone https://github.com/your-username/your-repository.git
+cd your-repository
+```
+
+### 2 — Create a Virtual Environment
+
+```bash
+python -m venv venv
+venv\Scripts\activate   # Windows
+```
+
+### 3 — Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4 — Add Required Model Files
+
+Ensure the following files exist before running:
+
+```
+models/final_model.h5
+label_mapping.npy
+mean.npy
+std.npy
+```
+
+### 5 — Run the Application
+
+```bash
+python run.py
+```
+
+### 6 — Open in Your Browser
+
+```
+http://localhost:5000/
+```
+
+---
+
+## Design Decisions
+
+**Heavy models loaded once at startup** — Whisper, KeyBERT, and the CNN model are initialized once when the app boots, avoiding per-request overhead.
+
+**Clean modular architecture** — The codebase separates concerns clearly:
+- `services/` → Business logic
+- `utils/` → Reusable helper functions
+- `scripts/` → Offline training tools
+
+**Centralized configuration** — All settings live in `config.py` for easy environment management.
+
+**Clear backend/frontend separation** — Flask serves as a pure API layer; HTML/CSS handles presentation independently.
+
+---
+
+## Learning Outcomes
+
+This project demonstrates practical experience across:
+
+- End-to-end ML system integration
+- Audio feature engineering (MFCC)
+- CNN-based speaker classification
+- Modern speech models (Whisper)
+- NLP semantic processing
+- Production-ready Flask architecture
+
+---
+
+## Future Improvements
+
+- [ ] Add speaker verification (1:1 matching)
+- [ ] Real-time streaming transcription
+- [ ] Improve transcription formatting
+- [ ] Dockerize the application
+- [ ] Deploy to AWS / GCP / Azure
+- [ ] Replace LSA with Transformer-based summarization
+- [ ] Add confidence scores & analytics dashboard
+
+---
+
+## Author
+
+**Achraf Moualem**  
+AI & Data Science Student  
+*Interested in AI Engineering, Speech Processing & Generative AI*
